@@ -1,21 +1,21 @@
 error: no rules expected the token `field`
-  --> tests/ui/07-fail-bitfield-fields-none.rs:7:1
-   |
-7  | / bitfield! {
-8  | |     struct BitNone(u8);
-9  | |     bool, _, _: 0;
-10 | | }
-   | |_^ no rules expected this token in macro call
-   |
-   = note: this error originates in the macro `$crate::bitfield` (in Nightly builds, run with -Z macro-backtrace for more info)
+ --> tests/ui/07-fail-bitfield-fields-none.rs:6:1
+  |
+6 | / bitfield! {
+7 | |     struct BitNone(u8);
+8 | |     bool, _, _: 0;
+9 | | }
+  | |_^ no rules expected this token in macro call
+  |
+  = note: this error originates in the macro `$crate::bitfield` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: no rules expected the token `field`
-  --> tests/ui/07-fail-bitfield-fields-none.rs:12:1
+  --> tests/ui/07-fail-bitfield-fields-none.rs:11:1
    |
-12 | / bitfield! {
-13 | |     struct BitsNone(u8);
-14 | |     u8, _, _: 0;
-15 | | }
+11 | / bitfield! {
+12 | |     struct BitsNone(u8);
+13 | |     u8, _, _: 0;
+14 | | }
    | |_^ no rules expected this token in macro call
    |
    = note: this error originates in the macro `$crate::bitfield` (in Nightly builds, run with -Z macro-backtrace for more info)
