@@ -1,10 +1,9 @@
 #![feature(const_convert)]
+#![feature(const_option)]
 #![feature(const_mut_refs)]
 #![feature(const_trait_impl)]
 
 use const_bitfield::bitfield;
-use num_derive::{FromPrimitive, ToPrimitive};
-use num_traits::{FromPrimitive, ToPrimitive};
 
 const KERNEL_CODE64: u64 = 0x00AF9B000000FFFF;
 const KERNEL_CODE32: u64 = 0x00CF9B000000FFFF;
@@ -17,7 +16,7 @@ pub enum DescriptorType {
     UserSegment = 1,
 }
 
-impl ::core::convert::From<bool> for DescriptorType {
+impl const From<bool> for DescriptorType {
     fn from(value: bool) -> Self {
         match value {
             false => DescriptorType::SystemSegment,
@@ -26,13 +25,17 @@ impl ::core::convert::From<bool> for DescriptorType {
     }
 }
 
-impl ::core::convert::From<DescriptorType> for bool {
+impl const From<DescriptorType> for bool {
     fn from(value: DescriptorType) -> Self {
-        return value == DescriptorType::UserSegment;
+        match value {
+            DescriptorType::SystemSegment => false,
+            DescriptorType::UserSegment => true,
+        }
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, FromPrimitive, ToPrimitive)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u8)]
 pub enum SegmentType {
     DataReadOnly = 0b000,
     DataReadWrite = 0b001,
@@ -44,15 +47,29 @@ pub enum SegmentType {
     CodeExecReadConforming = 0b111,
 }
 
-impl From<u8> for SegmentType {
+impl const From<u8> for SegmentType {
     fn from(value: u8) -> Self {
-        FromPrimitive::from_u8(value).unwrap()
+        match value {
+            x if x == SegmentType::DataReadOnly as u8 => SegmentType::DataReadOnly,
+            x if x == SegmentType::DataReadWrite as u8 => SegmentType::DataReadWrite,
+            x if x == SegmentType::DataReadOnlyDown as u8 => SegmentType::DataReadOnlyDown,
+            x if x == SegmentType::DataReadWriteDown as u8 => SegmentType::DataReadWriteDown,
+            x if x == SegmentType::CodeExecOnly as u8 => SegmentType::CodeExecOnly,
+            x if x == SegmentType::CodeExecRead as u8 => SegmentType::CodeExecRead,
+            x if x == SegmentType::CodeExecOnlyConforming as u8 => {
+                SegmentType::CodeExecOnlyConforming
+            }
+            x if x == SegmentType::CodeExecReadConforming as u8 => {
+                SegmentType::CodeExecReadConforming
+            }
+            _ => panic!("invalid value for segment type"),
+        }
     }
 }
 
-impl From<SegmentType> for u8 {
+impl const From<SegmentType> for u8 {
     fn from(value: SegmentType) -> Self {
-        ToPrimitive::to_u8(&value).unwrap()
+        value as u8
     }
 }
 
