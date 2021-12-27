@@ -8,13 +8,14 @@
 This crate provides a `bitfield!` macro for generating bitfield-like structures in Rust with support for compile-time
 evaluation using `const`. The following features are currently supported:
 
-- Support of `u8, u16, u32, u64, u128` as backing storage types
+- Support of `u8`, `u16`, `u32`, `u64`, `u128` as backing storage types
 - Get and set single-bit values as `bool`
 - Get and set values as unsigned / signed integer types
 - Optional mapping of individual getter to any custom type using `From` trait
 - Optional mapping of individual setter from any custom type using `From` trait
 - Optional support for overlapping fields for union-like behavior
 - Overlapping of fields for union-like implementations
+- Compatibility with `no_std`
 - Usage of arbitrary attributes on struct and fields
 - Usage of arbitrary visibility modifiers on struct and fields
 
