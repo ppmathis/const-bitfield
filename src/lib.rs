@@ -188,7 +188,7 @@ macro_rules! impl_bitrange {
                 );
 
                 // calculate mask for clearing bits
-                let mask = !((!0 as $storage_type) << (storage_bits - msb) >> (storage_bits - msb) >> lsb);
+                let mask = !((!0 as $storage_type) << (storage_bits - msb) >> (storage_bits - msb) >> lsb << lsb);
 
                 // clear bits and OR with new value
                 *self = (*self & mask) | (new_value << lsb);
