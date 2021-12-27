@@ -21,6 +21,8 @@ mod inner {
 use inner::{test_inner, Test};
 
 pub fn main() {
+    test_inner();
+
     let mut test = Test(0);
     test.set_test_2(0xF);
 }
