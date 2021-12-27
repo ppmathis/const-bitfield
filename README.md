@@ -1,5 +1,10 @@
 # const-bitfield
 
+[![GitHub](https://img.shields.io/static/v1?label=GitHub&message=const-bitfield&style=for-the-badge&logo=github&logoColor=white&color=informational)](https://github.com/ppmathis/const-bitfield)
+[![Crates.io](https://img.shields.io/crates/v/const-bitfield?style=for-the-badge&logo=rust&logoColor=white&color=informational)](https://crates.io/crates/const-bitfield)
+[![docs.rs](https://img.shields.io/docsrs/const-bitfield?style=for-the-badge&label=docs.rs&logo=rust&logoColor=white&color=informational)](https://docs.rs/const-bitfield)
+[![GitHub Actions Status](https://img.shields.io/github/workflow/status/ppmathis/const-bitfield/CI/main?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/ppmathis/const-bitfield/actions)
+
 This crate provides a `bitfield!` macro for generating bitfield-like structures in Rust with support for compile-time
 evaluation using `const`. The following features are currently supported:
 
