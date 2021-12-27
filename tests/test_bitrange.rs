@@ -1,6 +1,4 @@
-extern crate std;
-
-use crate::{BitRange, BitRangeMut};
+use const_bitfield::{BitRange, BitRangeMut};
 use std::panic;
 
 macro_rules! impl_test_range_uint {
@@ -163,8 +161,8 @@ macro_rules! impl_test_range_uint {
     };
 }
 
-impl_test_range_uint!(type_u8, u8, i8, [], [u16, u32, u64, u128]);
-impl_test_range_uint!(type_u16, u16, i16, [u8], [u32, u64, u128]);
-impl_test_range_uint!(type_u32, u32, i32, [u8, u16], [u64, u128]);
-impl_test_range_uint!(type_u64, u64, i64, [u8, u16, u32], [u128]);
-impl_test_range_uint!(type_u128, u128, i128, [u8, u16, u32, u64], []);
+impl_test_range_uint!(range_u8, u8, i8, [], [u16, u32, u64, u128]);
+impl_test_range_uint!(range_u16, u16, i16, [u8], [u32, u64, u128]);
+impl_test_range_uint!(range_u32, u32, i32, [u8, u16], [u64, u128]);
+impl_test_range_uint!(range_u64, u64, i64, [u8, u16, u32], [u128]);
+impl_test_range_uint!(range_u128, u128, i128, [u8, u16, u32, u64], []);

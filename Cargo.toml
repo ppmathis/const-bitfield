@@ -8,3 +8,6 @@ repository = "https://github.com/ppmathis/const-bitfield"
 description = "Macros for generating bitfield-like structures with const support."
 categories = ["no-std"]
 readme = "README.md"
+
+[dev-dependencies]
+trybuild = "1.0"

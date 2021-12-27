@@ -1,0 +1,11 @@
+error[E0624]: associated function `set_test` is private
+  --> tests/ui/06-fail-bitfield-fields-visibility.rs:18:10
+   |
+8  | /     bitfield! {
+9  | |         pub struct Test(u8);
+10 | |         u8, test, set_test: 3, 0;
+11 | |     }
+   | |_____- private associated function defined here
+...
+18 |       test.set_test(0xF);
+   |            ^^^^^^^^ private associated function
