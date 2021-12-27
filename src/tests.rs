@@ -3,8 +3,8 @@ extern crate std;
 use crate::{BitRange, BitRangeMut};
 use std::panic;
 
-macro_rules! impl_test_uint {
-    ($name:ident, $type:ty, [$($smaller_types:ty),*], [$($larger_types:ty),*]) => {
+macro_rules! impl_test_range_uint {
+    ($name:ident, $type:ty, $signed_type:ty, [$($smaller_types:ty),*], [$($larger_types:ty),*]) => {
         mod $name {
             use super::*;
 
@@ -50,6 +50,11 @@ macro_rules! impl_test_uint {
             #[should_panic]
             pub fn test_bits_invalid_msb_lsb() {
                 BitRange::<$type>::bits(&MAX_VALUE, 0, MAX_MSB);
+            }
+
+            #[test]
+            pub fn test_bits_into_signed() {
+                BitRange::<$signed_type>::bits(&MAX_VALUE, MAX_MSB, 0);
             }
 
             #[test]
@@ -158,8 +163,8 @@ macro_rules! impl_test_uint {
     };
 }
 
-impl_test_uint!(type_u8, u8, [], [u16, u32, u64, u128]);
-impl_test_uint!(type_u16, u16, [u8], [u32, u64, u128]);
-impl_test_uint!(type_u32, u32, [u8, u16], [u64, u128]);
-impl_test_uint!(type_u64, u64, [u8, u16, u32], [u128]);
-impl_test_uint!(type_u128, u128, [u8, u16, u32, u64], []);
+impl_test_range_uint!(type_u8, u8, i8, [], [u16, u32, u64, u128]);
+impl_test_range_uint!(type_u16, u16, i16, [u8], [u32, u64, u128]);
+impl_test_range_uint!(type_u32, u32, i32, [u8, u16], [u64, u128]);
+impl_test_range_uint!(type_u64, u64, i64, [u8, u16, u32], [u128]);
+impl_test_range_uint!(type_u128, u128, i128, [u8, u16, u32, u64], []);
