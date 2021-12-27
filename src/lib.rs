@@ -1,8 +1,43 @@
 #![no_std]
+#![deny(missing_docs)]
 #![feature(const_fn_trait_bound)]
 #![feature(const_mut_refs)]
 #![feature(const_trait_impl)]
 
+//! This crate provides macros to generate bitfield-like structs with const support.
+//!
+//! Due to offering const support, this library requires the usage of Rust nightly.
+//! Additionally, you must add the following feature flags to your crate root:
+//!
+//! ```rust
+//! #![feature(const_mut_refs)]
+//! #![feature(const_trait_impl)]
+//! ```
+//!
+//! This is required as some required features are currently gated behind these flags.
+//! Further documentation about usage can be found in the individual macros.
+
+/// This macro defines a new bitfield-like `struct` backed by a single uint-like type.
+/// A variable amount of getters and or setters can be specified on a bitwise level.
+/// Every operation automatically ensures that no bounds are being violated.
+///
+/// # Example
+/// ```rust
+/// #![feature(const_mut_refs)]
+/// #![feature(const_trait_impl)]
+///
+/// use const_bitfield::bitfield;
+///
+/// bitfield! {
+///     pub struct BitField(u16);
+///     u8, field1, set_field1: 7, 0;   // u8 getter/setter for bits 0..=7
+///     bool, field2, set_field2: 8;    // bool getter/setter for bit 8
+///     bool, field3, _: 9;             // bool getter for bit 9
+///     bool, _, set_field4: 10;        // bool setter for bit 10
+///     u8, field5, _: 12, 11;          // u8 getter for bits 11..=12
+///     u8, _, set_field6: 15, 13;      // u8 setter for bits 13..=15
+/// }
+/// ```
 #[macro_export]
 macro_rules! bitfield {
     // Generate new bitfield with getters and setters
@@ -100,19 +135,27 @@ macro_rules! bitfield {
     (@field @setter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, $getter:ident, _: $($exprs:expr),*) => {};
 }
 
+/// A trait to retrieve a range of bits as type `V`.
 pub trait BitRange<V> {
+    /// Get a range of bits between `lsb..=msb` and return as type `V`.
     fn bits(&self, msb: usize, lsb: usize) -> V;
 }
 
+/// A trait to set a range of bits with the type `V`.
 pub trait BitRangeMut<V>: BitRange<V> {
+    /// Set a range of bits between `lsb..=msb` using value `V`.
     fn set_bits(&mut self, msb: usize, lsb: usize, value: V) -> &mut Self;
 }
 
+/// A trait to retrieve a single bit as a boolean.
 pub trait Bit {
+    /// Get a single bit and return as boolean. (`true` = set, `false` = clear)
     fn bit(&self, bit: usize) -> bool;
 }
 
+/// A trait to set a single bit as a boolean.
 pub trait BitMut: Bit {
+    /// Set a single bit using a boolean. (`true` = set, `false` = clear)
     fn set_bit(&mut self, bit: usize, value: bool) -> &mut Self;
 }
 
@@ -127,8 +170,6 @@ impl<T: ~const BitRange<u8> + ~const BitRangeMut<u8>> const BitMut for T {
         self.set_bits(bit, bit, value as u8)
     }
 }
-
-pub struct TestIntegral(pub u8);
 
 macro_rules! impl_bitrange {
     // implement given range types for each storage type
