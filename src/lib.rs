@@ -6,6 +6,103 @@
 #[cfg(test)]
 mod tests;
 
+#[macro_export]
+macro_rules! bitfield {
+    // Generate new bitfield with getters and setters
+    ($(#[$attributes:meta])* $visibility:vis struct $name:ident($type:ty); $($fields:tt)*) => {
+        $(#[$attributes])*
+        $visibility struct $name(pub $type);
+
+        $crate::bitfield! {@impl_range struct $name($type)}
+        impl $name {
+            $crate::bitfield! {@fields @getter $($fields)*}
+            $crate::bitfield! {@fields @setter $($fields)*}
+        }
+    };
+
+    // Impl: Implement BitRange<T> and BitRangeMut<T> for struct(pub T)
+    (@impl_range struct $name:ident($type:ty)) => {
+        impl<T> const $crate::BitRange<T> for $name
+        where
+            $type: ~const $crate::BitRange<T>
+        {
+            #[inline]
+            fn bits(&self, msb: usize, lsb: usize) -> T {
+                self.0.bits(msb, lsb)
+            }
+        }
+
+        impl<T> const $crate::BitRangeMut<T> for $name
+        where
+            $type: ~const $crate::BitRange<T> + ~const $crate::BitRangeMut<T>
+        {
+            #[inline]
+            fn set_bits(&mut self, msb: usize, lsb: usize, value: T) -> &mut Self {
+                self.0.set_bits(msb, lsb, value);
+                self
+            }
+        }
+    };
+
+    // Fields: Process each field one-by-one by splitting list head off
+    (@fields @$variant:tt $(#[$attributes:meta])* $type:ty, $getter:ident, $setter:ident: $($exprs:expr),*; $($rest:tt)*) => {
+        $crate::bitfield! {@field @$variant $(#[$attributes])* $type, $type, $type, $getter, $setter: $($exprs),*}
+        $crate::bitfield! {@fields @$variant $($rest)*}
+    };
+
+    // Fields: Stop case once all fields are processed
+    (@fields @$variant:tt) => {};
+
+    // Field: Propagate field with getter and setter to individual macros
+    (@field @$variant:tt $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, $getter:ident, $setter:ident: $($exprs:expr),*) => {
+        $crate::bitfield! {@field @$variant $(#[$attributes])* $visibility $type, $from, $into, $getter, _: $($exprs),*}
+        $crate::bitfield! {@field @$variant $(#[$attributes])* $visibility $type, $from, $into, _, $setter: $($exprs),*}
+    };
+
+    // Field Getter: Bit Range
+    (@field @getter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, $getter:ident, _: $msb:expr, $lsb:expr) => {
+        $(#[$attributes])*
+        $visibility const fn $getter(&self) -> $into {
+            use $crate::BitRange;
+            let raw_value: $type = self.bits($msb, $lsb);
+            raw_value
+        }
+    };
+
+    // Field Getter: Single Bit
+    (@field @getter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, $getter:ident, _: $bit:expr) => {
+        $(#[$attributes])*
+        $visibility const fn $getter(&self) -> bool {
+            use $crate::Bit;
+            self.bit($bit)
+        }
+    };
+
+    // Field Getter: Disabled
+    (@field @getter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, _, $setter:ident: $($exprs:expr),*) => {};
+
+    // Field Setter: Bit Range
+    (@field @setter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, _, $setter:ident: $msb:expr, $lsb:expr) => {
+        $(#[$attributes])*
+        $visibility const fn $setter(&mut self, value: $from) -> &mut Self {
+            use $crate::BitRangeMut;
+            self.set_bits($msb, $lsb, value)
+        }
+    };
+
+    // Field Setter: Single Bit
+    (@field @setter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, _, $setter:ident: $bit:expr) => {
+        $(#[$attributes])*
+        $visibility const fn $setter(&mut self, value: bool) -> &mut Self {
+            use $crate::BitMut;
+            self.set_bit($bit, value)
+        }
+    };
+
+    // Field Setter: Disabled
+    (@field @setter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, $getter:ident, _: $($exprs:expr),*) => {};
+}
+
 pub trait BitRange<V> {
     fn bits(&self, msb: usize, lsb: usize) -> V;
 }
