@@ -10,8 +10,9 @@
 //! Additionally, you must add the following feature flags to your crate root:
 //!
 //! ```rust
-//! #![feature(const_mut_refs)]
-//! #![feature(const_trait_impl)]
+//! #![feature(const_convert)]      // optional, when using from/into conversion
+//! #![feature(const_mut_refs)]     // always required
+//! #![feature(const_trait_impl)]   // always required
 //! ```
 //!
 //! This is required as some required features are currently gated behind these flags.
@@ -76,9 +77,34 @@ macro_rules! bitfield {
         }
     };
 
-    // Fields: Process each field one-by-one by splitting list head off
+    // Parse Fields: Process regular fields without from/into conversion
     (@fields @$variant:tt $(#[$attributes:meta])* $visibility:vis $type:ty, $getter:tt, $setter:tt: $($exprs:expr),*; $($rest:tt)*) => {
-        $crate::bitfield! {@field @$variant $(#[$attributes])* $visibility $type, $type, $type, $getter, $setter: $($exprs),*}
+        $crate::bitfield! {@fields @$variant $(#[$attributes])* $visibility $type, _, _, $getter, $setter: $($exprs),*; $($rest)*}
+    };
+
+    // Parse Fields: Process fields with from conversion
+    (@fields @$variant:tt $(#[$attributes:meta])* $visibility:vis $type:ty, from $from:ty, $getter:tt, $setter:tt: $($exprs:expr),*; $($rest:tt)*) => {
+        $crate::bitfield! {@fields @$variant $(#[$attributes])* $visibility $type, $from, $type, $getter, $setter: $($exprs),*; $($rest)*}
+    };
+
+    // Parse Fields: Process fields with into conversion
+    (@fields @$variant:tt $(#[$attributes:meta])* $visibility:vis $type:ty, into $into:ty, $getter:tt, $setter:tt: $($exprs:expr),*; $($rest:tt)*) => {
+        $crate::bitfield! {@fields @$variant $(#[$attributes])* $visibility $type, $type, $into, $getter, $setter: $($exprs),*; $($rest)*}
+    };
+
+    // Parse Fields: Process fields with from and into conversion for same type
+    (@fields @$variant:tt $(#[$attributes:meta])* $visibility:vis $type:ty, from into $from_into:ty, $getter:tt, $setter:tt: $($exprs:expr),*; $($rest:tt)*) => {
+        $crate::bitfield! {@fields @$variant $(#[$attributes])* $visibility $type, $from_into, $from_into, $getter, $setter: $($exprs),*; $($rest)*}
+    };
+
+    // Parse Fields: Process fields with from and into conversion for different types
+    (@fields @$variant:tt $(#[$attributes:meta])* $visibility:vis $type:ty, from $from:ty, into $into:ty, $getter:tt, $setter:tt: $($exprs:expr),*; $($rest:tt)*) => {
+        $crate::bitfield! {@fields @$variant $(#[$attributes])* $visibility $type, $from, $into, $getter, $setter: $($exprs),*; $($rest)*}
+    };
+
+    // Fields: Process each field one-by-one by splitting list head off
+    (@fields @$variant:tt $(#[$attributes:meta])* $visibility:vis $type:ty, $from:tt, $into:tt, $getter:tt, $setter:tt: $($exprs:expr),*; $($rest:tt)*) => {
+        $crate::bitfield! {@field @$variant $(#[$attributes])* $visibility $type, $from, $into, $getter, $setter: $($exprs),*}
         $crate::bitfield! {@fields @$variant $($rest)*}
     };
 
@@ -86,23 +112,35 @@ macro_rules! bitfield {
     (@fields @$variant:tt) => {};
 
     // Field: Propagate field with getter and setter to individual macros
-    (@field @$variant:tt $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, $getter:ident, $setter:ident: $($exprs:expr),*) => {
+    (@field @$variant:tt $(#[$attributes:meta])* $visibility:vis $type:ty, $from:tt, $into:tt, $getter:ident, $setter:ident: $($exprs:expr),*) => {
         $crate::bitfield! {@field @$variant $(#[$attributes])* $visibility $type, $from, $into, $getter, _: $($exprs),*}
         $crate::bitfield! {@field @$variant $(#[$attributes])* $visibility $type, $from, $into, _, $setter: $($exprs),*}
     };
 
-    // Field Getter: Bit Range
-    (@field @getter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, $getter:ident, _: $msb:expr, $lsb:expr) => {
+    // Field Getter: Bit Range (without conversion)
+    (@field @getter $(#[$attributes:meta])* $visibility:vis $type:ty, _, _, $getter:ident, _: $msb:expr, $lsb:expr) => {
         $(#[$attributes])*
-        $visibility const fn $getter(&self) -> $into {
+        $visibility const fn $getter(&self) -> $type {
             use $crate::BitRange;
-            let raw_value: $type = self.bits($msb, $lsb);
-            raw_value
+            self.bits($msb, $lsb)
         }
     };
 
-    // Field Getter: Single Bit
-    (@field @getter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, $getter:ident, _: $bit:expr) => {
+    // Field Getter: Bit Range (with conversion)
+    (@field @getter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, $getter:ident, _: $msb:expr, $lsb:expr) => {
+        $(#[$attributes])*
+        $visibility const fn $getter(&self) -> $into
+            where $into: ~const ::core::convert::From<$type>
+        {
+            use $crate::BitRange;
+            let raw_value: $type = self.bits($msb, $lsb);
+            let value: $into = <$into>::from(raw_value);
+            value
+        }
+    };
+
+    // Field Getter: Single Bit (without conversion)
+    (@field @getter $(#[$attributes:meta])* $visibility:vis $type:ty, _, _, $getter:ident, _: $bit:expr) => {
         $(#[$attributes])*
         $visibility const fn $getter(&self) -> bool {
             use $crate::Bit;
@@ -110,29 +148,66 @@ macro_rules! bitfield {
         }
     };
 
-    // Field Getter: Disabled
-    (@field @getter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, _, $setter:ident: $($exprs:expr),*) => {};
-
-    // Field Setter: Bit Range
-    (@field @setter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, _, $setter:ident: $msb:expr, $lsb:expr) => {
+    // Field Getter: Single Bit (with conversion)
+    (@field @getter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, $getter:ident, _: $bit:expr) => {
         $(#[$attributes])*
-        $visibility const fn $setter(&mut self, value: $from) -> &mut Self {
+        $visibility const fn $getter(&self) -> $into
+            where $into: ~const ::core::convert::From<$type>
+        {
+            use $crate::Bit;
+            let raw_value: $type = self.bit($bit);
+            let value: $into = <$into>::from(raw_value);
+            value
+        }
+    };
+
+    // Field Getter: Disabled
+    (@field @getter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:tt, $into:tt, _, $setter:ident: $($exprs:expr),*) => {};
+
+    // Field Setter: Bit Range (without conversion)
+    (@field @setter $(#[$attributes:meta])* $visibility:vis $type:ty, _, _, _, $setter:ident: $msb:expr, $lsb:expr) => {
+        $(#[$attributes])*
+        $visibility const fn $setter(&mut self, value: $type) -> &mut Self {
             use $crate::BitRangeMut;
             self.set_bits($msb, $lsb, value)
         }
     };
 
-    // Field Setter: Single Bit
-    (@field @setter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, _, $setter:ident: $bit:expr) => {
+    // Field Setter: Bit Range (with conversion)
+    (@field @setter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, _, $setter:ident: $msb:expr, $lsb:expr) => {
         $(#[$attributes])*
-        $visibility const fn $setter(&mut self, value: bool) -> &mut Self {
+        $visibility const fn $setter(&mut self, value: $from) -> &mut Self
+            where $type: ~const ::core::convert::From<$from>
+        {
+            use $crate::BitRangeMut;
+            let raw_value: $type = <$type>::from(value);
+            self.set_bits($msb, $lsb, raw_value)
+        }
+    };
+
+    // Field Setter: Single Bit (without conversion)
+    (@field @setter $(#[$attributes:meta])* $visibility:vis $type:ty, _, _, _, $setter:ident: $bit:expr) => {
+        $(#[$attributes])*
+        $visibility const fn $setter(&mut self, value: $type) -> &mut Self {
             use $crate::BitMut;
             self.set_bit($bit, value)
         }
     };
 
+    // Field Setter: Single Bit (with conversion)
+    (@field @setter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, _, $setter:ident: $bit:expr) => {
+        $(#[$attributes])*
+        $visibility const fn $setter(&mut self, value: $from) -> &mut Self
+            where $type: ~const ::core::convert::From<$from>
+        {
+            use $crate::BitMut;
+            let raw_value: $type = <$type>::from(value);
+            self.set_bit($bit, raw_value)
+        }
+    };
+
     // Field Setter: Disabled
-    (@field @setter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:ty, $into:ty, $getter:ident, _: $($exprs:expr),*) => {};
+    (@field @setter $(#[$attributes:meta])* $visibility:vis $type:ty, $from:tt, $into:tt, $getter:ident, _: $($exprs:expr),*) => {};
 }
 
 /// A trait to retrieve a range of bits as type `V`.

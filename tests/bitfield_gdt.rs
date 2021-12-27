@@ -1,11 +1,60 @@
+#![feature(const_convert)]
 #![feature(const_mut_refs)]
 #![feature(const_trait_impl)]
 
 use const_bitfield::bitfield;
+use num_derive::{FromPrimitive, ToPrimitive};
+use num_traits::{FromPrimitive, ToPrimitive};
 
 const KERNEL_CODE64: u64 = 0x00AF9B000000FFFF;
 const KERNEL_CODE32: u64 = 0x00CF9B000000FFFF;
 const KERNEL_DATA: u64 = 0x00CF93000000FFFF;
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(u8)]
+pub enum DescriptorType {
+    SystemSegment = 0,
+    UserSegment = 1,
+}
+
+impl ::core::convert::From<bool> for DescriptorType {
+    fn from(value: bool) -> Self {
+        match value {
+            false => DescriptorType::SystemSegment,
+            true => DescriptorType::UserSegment,
+        }
+    }
+}
+
+impl ::core::convert::From<DescriptorType> for bool {
+    fn from(value: DescriptorType) -> Self {
+        return value == DescriptorType::UserSegment;
+    }
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, FromPrimitive, ToPrimitive)]
+pub enum SegmentType {
+    DataReadOnly = 0b000,
+    DataReadWrite = 0b001,
+    DataReadOnlyDown = 0b010,
+    DataReadWriteDown = 0b011,
+    CodeExecOnly = 0b100,
+    CodeExecRead = 0b101,
+    CodeExecOnlyConforming = 0b110,
+    CodeExecReadConforming = 0b111,
+}
+
+impl From<u8> for SegmentType {
+    fn from(value: u8) -> Self {
+        FromPrimitive::from_u8(value).unwrap()
+    }
+}
+
+impl From<SegmentType> for u8 {
+    fn from(value: SegmentType) -> Self {
+        ToPrimitive::to_u8(&value).unwrap()
+    }
+}
 
 bitfield! {
     #[derive(Copy, Clone)]
@@ -14,10 +63,8 @@ bitfield! {
     u32, base_0_15, set_base_0_15: 31, 16;
     u8, base_16_23, set_base_16_23: 39, 32;
     bool, accessed, set_accessed: 40;
-    bool, read_write, set_read_write: 41;
-    bool, direction_conforming, set_direction_conforming: 42;
-    bool, executable, set_executable: 43;
-    bool, descriptor_type, set_descriptor_type: 44;
+    u8, from into SegmentType, segment_type, set_segment_type: 43, 41;
+    bool, from into DescriptorType, descriptor_type, set_descriptor_type: 44;
     u8, privilege_level, set_privilege_level: 46, 45;
     bool, present, set_present: 47;
     u8, limit_16_19, set_limit_16_19: 51, 48;
@@ -42,10 +89,8 @@ pub fn test_parse_kernel_code64() {
 
     // flags
     assert_eq!(descriptor.accessed(), true);
-    assert_eq!(descriptor.read_write(), true);
-    assert_eq!(descriptor.direction_conforming(), false);
-    assert_eq!(descriptor.executable(), true);
-    assert_eq!(descriptor.descriptor_type(), true);
+    assert_eq!(descriptor.segment_type(), SegmentType::CodeExecRead);
+    assert_eq!(descriptor.descriptor_type(), DescriptorType::UserSegment);
     assert_eq!(descriptor.privilege_level(), 0);
     assert_eq!(descriptor.present(), true);
     assert_eq!(descriptor.long_mode(), true);
@@ -66,10 +111,8 @@ pub fn test_build_kernel_code64() {
         .set_limit_16_19(0xF)
         // flags
         .set_accessed(true)
-        .set_read_write(true)
-        .set_direction_conforming(false)
-        .set_executable(true)
-        .set_descriptor_type(true)
+        .set_segment_type(SegmentType::CodeExecRead)
+        .set_descriptor_type(DescriptorType::UserSegment)
         .set_privilege_level(0)
         .set_present(true)
         .set_long_mode(true)
@@ -94,10 +137,8 @@ pub fn test_parse_kernel_code32() {
 
     // flags
     assert_eq!(descriptor.accessed(), true);
-    assert_eq!(descriptor.read_write(), true);
-    assert_eq!(descriptor.direction_conforming(), false);
-    assert_eq!(descriptor.executable(), true);
-    assert_eq!(descriptor.descriptor_type(), true);
+    assert_eq!(descriptor.segment_type(), SegmentType::CodeExecRead);
+    assert_eq!(descriptor.descriptor_type(), DescriptorType::UserSegment);
     assert_eq!(descriptor.privilege_level(), 0);
     assert_eq!(descriptor.present(), true);
     assert_eq!(descriptor.long_mode(), false);
@@ -118,10 +159,8 @@ pub fn test_build_kernel_code32() {
         .set_limit_16_19(0xF)
         // flags
         .set_accessed(true)
-        .set_read_write(true)
-        .set_direction_conforming(false)
-        .set_executable(true)
-        .set_descriptor_type(true)
+        .set_segment_type(SegmentType::CodeExecRead)
+        .set_descriptor_type(DescriptorType::UserSegment)
         .set_privilege_level(0)
         .set_present(true)
         .set_long_mode(false)
@@ -146,10 +185,8 @@ pub fn test_parse_kernel_data() {
 
     // flags
     assert_eq!(descriptor.accessed(), true);
-    assert_eq!(descriptor.read_write(), true);
-    assert_eq!(descriptor.direction_conforming(), false);
-    assert_eq!(descriptor.executable(), false);
-    assert_eq!(descriptor.descriptor_type(), true);
+    assert_eq!(descriptor.segment_type(), SegmentType::DataReadWrite);
+    assert_eq!(descriptor.descriptor_type(), DescriptorType::UserSegment);
     assert_eq!(descriptor.privilege_level(), 0);
     assert_eq!(descriptor.present(), true);
     assert_eq!(descriptor.long_mode(), false);
@@ -170,10 +207,8 @@ pub fn test_build_kernel_data() {
         .set_limit_16_19(0xF)
         // flags
         .set_accessed(true)
-        .set_read_write(true)
-        .set_direction_conforming(false)
-        .set_executable(false)
-        .set_descriptor_type(true)
+        .set_segment_type(SegmentType::DataReadWrite)
+        .set_descriptor_type(DescriptorType::UserSegment)
         .set_privilege_level(0)
         .set_present(true)
         .set_long_mode(false)
