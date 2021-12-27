@@ -1,4 +1,10 @@
 [package]
 name = "const-bitfield"
 version = "0.1.0"
+authors = ["Pascal Mathis <mail@pascalmathis.com>"]
 edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ppmathis/const-bitfield"
+description = "Macros for generating bitfield-like structures with const support."
+categories = ["no-std"]
+readme = "README.md"
