@@ -3,9 +3,6 @@
 #![feature(const_mut_refs)]
 #![feature(const_trait_impl)]
 
-#[cfg(test)]
-mod tests;
-
 #[macro_export]
 macro_rules! bitfield {
     // Generate new bitfield with getters and setters
@@ -45,8 +42,8 @@ macro_rules! bitfield {
     };
 
     // Fields: Process each field one-by-one by splitting list head off
-    (@fields @$variant:tt $(#[$attributes:meta])* $type:ty, $getter:ident, $setter:ident: $($exprs:expr),*; $($rest:tt)*) => {
-        $crate::bitfield! {@field @$variant $(#[$attributes])* $type, $type, $type, $getter, $setter: $($exprs),*}
+    (@fields @$variant:tt $(#[$attributes:meta])* $visibility:vis $type:ty, $getter:tt, $setter:tt: $($exprs:expr),*; $($rest:tt)*) => {
+        $crate::bitfield! {@field @$variant $(#[$attributes])* $visibility $type, $type, $type, $getter, $setter: $($exprs),*}
         $crate::bitfield! {@fields @$variant $($rest)*}
     };
 
