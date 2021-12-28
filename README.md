@@ -62,6 +62,10 @@ fn example() {
 A more detailed example can be found within [tests/bitfield_gdt.rs](tests/bitfield_gdt.rs) which uses the `bitfield!` macro
 to implement parsing and building entries of the [x86 Global Descriptor Table](https://en.wikipedia.org/wiki/Global_Descriptor_Table).
 
+You may wish to combine this crate with [const-enum](https://crates.io/crates/const-enum) to directly map fields of your bitfield
+from and into enums with a `repr` type. To do so, simply use `#[derive(ConstEnum)]` along with e.g. `repr(u8)`. This specific use case
+is also shown as part of the GDT example linked above.
+
 ## Additional Credits
 This crate is heavily inspired by [dzamlo/rust-bitfield](https://github.com/dzamlo/rust-bitfield).
 
