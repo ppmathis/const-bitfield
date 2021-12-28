@@ -10,4 +10,5 @@ categories = ["no-std"]
 readme = "README.md"
 
 [dev-dependencies]
+const-enum = "0.1.0"
 trybuild = "1.0"

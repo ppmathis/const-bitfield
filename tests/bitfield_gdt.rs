@@ -4,6 +4,7 @@
 #![feature(const_trait_impl)]
 
 use const_bitfield::bitfield;
+use const_enum::ConstEnum;
 
 const KERNEL_CODE64: u64 = 0x00AF9B000000FFFF;
 const KERNEL_CODE32: u64 = 0x00CF9B000000FFFF;
@@ -34,7 +35,7 @@ impl const From<DescriptorType> for bool {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, ConstEnum)]
 #[repr(u8)]
 pub enum SegmentType {
     DataReadOnly = 0b000,
@@ -45,32 +46,6 @@ pub enum SegmentType {
     CodeExecRead = 0b101,
     CodeExecOnlyConforming = 0b110,
     CodeExecReadConforming = 0b111,
-}
-
-impl const From<u8> for SegmentType {
-    fn from(value: u8) -> Self {
-        match value {
-            x if x == SegmentType::DataReadOnly as u8 => SegmentType::DataReadOnly,
-            x if x == SegmentType::DataReadWrite as u8 => SegmentType::DataReadWrite,
-            x if x == SegmentType::DataReadOnlyDown as u8 => SegmentType::DataReadOnlyDown,
-            x if x == SegmentType::DataReadWriteDown as u8 => SegmentType::DataReadWriteDown,
-            x if x == SegmentType::CodeExecOnly as u8 => SegmentType::CodeExecOnly,
-            x if x == SegmentType::CodeExecRead as u8 => SegmentType::CodeExecRead,
-            x if x == SegmentType::CodeExecOnlyConforming as u8 => {
-                SegmentType::CodeExecOnlyConforming
-            }
-            x if x == SegmentType::CodeExecReadConforming as u8 => {
-                SegmentType::CodeExecReadConforming
-            }
-            _ => panic!("invalid value for segment type"),
-        }
-    }
-}
-
-impl const From<SegmentType> for u8 {
-    fn from(value: SegmentType) -> Self {
-        value as u8
-    }
 }
 
 bitfield! {
