@@ -7,7 +7,28 @@ error: no rules expected the token `field`
 9 | | }
   | |_^ no rules expected this token in macro call
   |
-  = note: this error originates in the macro `$crate::bitfield` (in Nightly builds, run with -Z macro-backtrace for more info)
+note: while trying to match `impl_range`
+ --> src/lib.rs
+  |
+  |     (@impl_range struct $name:ident($type:ty)) => {
+  |       ^^^^^^^^^^
+  = note: this error originates in the macro `$crate::bitfield` which comes from the expansion of the macro `bitfield` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: no rules expected the token `field`
+ --> tests/ui/07-fail-bitfield-fields-none.rs:6:1
+  |
+6 | / bitfield! {
+7 | |     struct BitNone(u8);
+8 | |     bool, _, _: 0;
+9 | | }
+  | |_^ no rules expected this token in macro call
+  |
+note: while trying to match `impl_range`
+ --> src/lib.rs
+  |
+  |     (@impl_range struct $name:ident($type:ty)) => {
+  |       ^^^^^^^^^^
+  = note: this error originates in the macro `$crate::bitfield` which comes from the expansion of the macro `bitfield` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error: no rules expected the token `field`
   --> tests/ui/07-fail-bitfield-fields-none.rs:11:1
@@ -18,4 +39,25 @@ error: no rules expected the token `field`
 14 | | }
    | |_^ no rules expected this token in macro call
    |
-   = note: this error originates in the macro `$crate::bitfield` (in Nightly builds, run with -Z macro-backtrace for more info)
+note: while trying to match `impl_range`
+  --> src/lib.rs
+   |
+   |     (@impl_range struct $name:ident($type:ty)) => {
+   |       ^^^^^^^^^^
+   = note: this error originates in the macro `$crate::bitfield` which comes from the expansion of the macro `bitfield` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: no rules expected the token `field`
+  --> tests/ui/07-fail-bitfield-fields-none.rs:11:1
+   |
+11 | / bitfield! {
+12 | |     struct BitsNone(u8);
+13 | |     u8, _, _: 0;
+14 | | }
+   | |_^ no rules expected this token in macro call
+   |
+note: while trying to match `impl_range`
+  --> src/lib.rs
+   |
+   |     (@impl_range struct $name:ident($type:ty)) => {
+   |       ^^^^^^^^^^
+   = note: this error originates in the macro `$crate::bitfield` which comes from the expansion of the macro `bitfield` (in Nightly builds, run with -Z macro-backtrace for more info)

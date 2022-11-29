@@ -1,6 +1,5 @@
 #![no_std]
 #![deny(missing_docs)]
-#![feature(const_fn_trait_bound)]
 #![feature(const_mut_refs)]
 #![feature(const_trait_impl)]
 
@@ -211,36 +210,40 @@ macro_rules! bitfield {
 }
 
 /// A trait to retrieve a range of bits as type `V`.
+#[const_trait]
 pub trait BitRange<V> {
     /// Get a range of bits between `lsb..=msb` and return as type `V`.
     fn bits(&self, msb: usize, lsb: usize) -> V;
 }
 
 /// A trait to set a range of bits with the type `V`.
+#[const_trait]
 pub trait BitRangeMut<V>: BitRange<V> {
     /// Set a range of bits between `lsb..=msb` using value `V`.
     fn set_bits(&mut self, msb: usize, lsb: usize, value: V) -> &mut Self;
 }
 
 /// A trait to retrieve a single bit as a boolean.
+#[const_trait]
 pub trait Bit {
     /// Get a single bit and return as boolean. (`true` = set, `false` = clear)
     fn bit(&self, bit: usize) -> bool;
 }
 
 /// A trait to set a single bit as a boolean.
+#[const_trait]
 pub trait BitMut: Bit {
     /// Set a single bit using a boolean. (`true` = set, `false` = clear)
     fn set_bit(&mut self, bit: usize, value: bool) -> &mut Self;
 }
 
-impl<T: ~const BitRange<u8>> const Bit for T {
+impl<T: ~ const BitRange<u8>> const Bit for T {
     fn bit(&self, bit: usize) -> bool {
         self.bits(bit, bit) != 0
     }
 }
 
-impl<T: ~const BitRange<u8> + ~const BitRangeMut<u8>> const BitMut for T {
+impl<T: ~ const BitRange<u8> + ~ const BitRangeMut<u8>> const BitMut for T {
     fn set_bit(&mut self, bit: usize, value: bool) -> &mut Self {
         self.set_bits(bit, bit, value as u8)
     }
